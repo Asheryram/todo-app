@@ -184,7 +184,11 @@ app.get('/api/metadata', async (req, res) => {
    HEALTH CHECK (ALB)
 ========================== */
 
-app.get('/health', async (req, res) => {
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+app.get('/dbactive', async (req, res) => {
   try {
     await pool.query('SELECT 1');
     res.status(200).json({ status: 'healthy', database: 'connected' });
