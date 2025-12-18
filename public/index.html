@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AWS RDS Todo App</title>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; }
+    .container { width: 400px; margin: 50px auto; background: white; padding: 20px; }
+    li { display: flex; justify-content: space-between; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>AWS RDS Todo App</h2>
+    <input id="todoInput" placeholder="New todo" />
+    <button onclick="addTodo()">Add</button>
+    <ul id="list"></ul>
+  </div>
+
+<script>
+const API = '/api/todos';
+
+function loadTodos() {
+  fetch(API).then(r => r.json()).then(data => {
+    const list = document.getElementById('list');
+    list.innerHTML = '';
+    data.forEach(t => {
+      const li = document.createElement('li');
+      li.innerHTML = `
+        <span style="text-decoration:${t.completed ? 'line-through' : 'none'}">${t.title}</span>
+        <div>
+          <button onclick="toggle(${t.id}, ${!t.completed})">✓</button>
+          <button onclick="del(${t.id})">X</button>
+        </div>`;
+      list.appendChild(li);
+    });
+  });
+}
+
+function addTodo() {
+  const title = document.getElementById('todoInput').value;
+  fetch(API, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title })
+  }).then(loadTodos);
+}
+
+function toggle(id, completed) {
+  fetch(`${API}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ completed })
+  }).then(loadTodos);
+}
+
+function del(id) {
+  fetch(`${API}/${id}`, { method: 'DELETE' }).then(loadTodos);
+}
+
+loadTodos();
+</script>
+</body>
+</html>
