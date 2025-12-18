@@ -1,63 +1,240 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+  <meta charset="UTF-8">
   <title>AWS RDS Todo App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    body { font-family: Arial; background: #f4f4f4; }
-    .container { width: 400px; margin: 50px auto; background: white; padding: 20px; }
-    li { display: flex; justify-content: space-between; margin: 8px 0; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #e0e7ff;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding-top: 40px;
+    }
+
+    .container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 12px;
+      width: 420px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #3730a3;
+    }
+
+    #todoInput {
+      width: calc(100% - 90px);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #c7d2fe;
+      outline: none;
+      font-size: 16px;
+    }
+
+    #todoInput:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    button {
+      padding: 10px 16px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #6366f1;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #4f46e5;
+    }
+
+    ul {
+      list-style: none;
+      margin-top: 20px;
+    }
+
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: #f3f4f6;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    li span.completed {
+      text-decoration: line-through;
+      color: #9ca3af;
+    }
+
+    li button {
+      background-color: #fff;
+      color: #6366f1;
+      padding: 6px 10px;
+      font-size: 14px;
+      margin-left: 6px;
+    }
+
+    li button:hover {
+      background-color: #6366f1;
+      color: #fff;
+    }
+
+    .health {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: #fef3c7;
+      font-weight: 600;
+    }
+
+    .health span {
+      font-weight: 400;
+    }
+
+    .healthy {
+      color: green;
+    }
+
+    .unhealthy {
+      color: red;
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
     <h2>AWS RDS Todo App</h2>
-    <input id="todoInput" placeholder="New todo" />
-    <button onclick="addTodo()">Add</button>
+
+    <!-- Health panel -->
+    <div class="health">
+      Server: <span id="serverHealth">Loading...</span>
+      DB: <span id="dbHealth">Loading...</span>
+    </div>
+
+    <!-- Todo input -->
+    <div style="display:flex;">
+      <input id="todoInput" placeholder="New todo" />
+      <button onclick="addTodo()">Add</button>
+    </div>
+
+    <!-- Todo list -->
     <ul id="list"></ul>
   </div>
 
-<script>
-const API = '/api/todos';
+  <script>
+    const API = '/api/todos';
+    const SERVER_HEALTH = '/health';
+    const DB_HEALTH = '/dbactive';
 
-function loadTodos() {
-  fetch(API).then(r => r.json()).then(data => {
-    const list = document.getElementById('list');
-    list.innerHTML = '';
-    data.forEach(t => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-        <span style="text-decoration:${t.completed ? 'line-through' : 'none'}">${t.title}</span>
+    // Load todos
+    async function loadTodos() {
+      try {
+        const res = await fetch(API);
+        const data = await res.json();
+        const list = document.getElementById('list');
+        list.innerHTML = '';
+        data.forEach(t => {
+          const li = document.createElement('li');
+          li.innerHTML = `
+        <span class="${t.completed ? 'completed' : ''}">${t.title}</span>
         <div>
           <button onclick="toggle(${t.id}, ${!t.completed})">✓</button>
           <button onclick="del(${t.id})">X</button>
         </div>`;
-      list.appendChild(li);
-    });
-  });
-}
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error('❌ Failed to load todos:', err);
+      }
+    }
 
-function addTodo() {
-  const title = document.getElementById('todoInput').value;
-  fetch(API, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title })
-  }).then(loadTodos);
-}
+    // Add todo
+    async function addTodo() {
+      const input = document.getElementById('todoInput');
+      const title = input.value.trim();
+      if (!title) return;
+      try {
+        await fetch(API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title })
+        });
+        input.value = '';
+        loadTodos();
+      } catch (err) {
+        console.error('❌ Failed to add todo:', err);
+      }
+    }
 
-function toggle(id, completed) {
-  fetch(`${API}/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ completed })
-  }).then(loadTodos);
-}
+    // Toggle completed
+    async function toggle(id, completed) {
+      try {
+        await fetch(`${API}/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed })
+        });
+        loadTodos();
+      } catch (err) {
+        console.error('❌ Failed to update todo:', err);
+      }
+    }
 
-function del(id) {
-  fetch(`${API}/${id}`, { method: 'DELETE' }).then(loadTodos);
-}
+    // Delete todo
+    async function del(id) {
+      try {
+        await fetch(`${API}/${id}`, { method: 'DELETE' });
+        loadTodos();
+      } catch (err) {
+        console.error('❌ Failed to delete todo:', err);
+      }
+    }
 
-loadTodos();
-</script>
+    // Load server & DB health
+    async function loadHealth() {
+      try {
+        const serverRes = await fetch(SERVER_HEALTH);
+        const dbRes = await fetch(DB_HEALTH);
+
+        document.getElementById('serverHealth').textContent = serverRes.ok ? 'Healthy' : 'Unhealthy';
+        document.getElementById('serverHealth').className = serverRes.ok ? 'healthy' : 'unhealthy';
+
+        const dbData = await dbRes.json();
+        const dbStatus = dbData.status === 'healthy' ? 'Healthy' : 'Unhealthy';
+        document.getElementById('dbHealth').textContent = dbStatus;
+        document.getElementById('dbHealth').className = dbData.status === 'healthy' ? 'healthy' : 'unhealthy';
+      } catch (err) {
+        console.error('❌ Failed to load health:', err);
+        document.getElementById('serverHealth').textContent = 'Unhealthy';
+        document.getElementById('serverHealth').className = 'unhealthy';
+        document.getElementById('dbHealth').textContent = 'Unhealthy';
+        document.getElementById('dbHealth').className = 'unhealthy';
+      }
+    }
+
+    // Initial load
+    loadTodos();
+    loadHealth();
+
+    // Refresh health every 10 seconds
+    setInterval(loadHealth, 10000);
+    setInterval(loadTodos, 10000);
+  </script>
 </body>
+
 </html>
