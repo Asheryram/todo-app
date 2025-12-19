@@ -6,129 +6,437 @@
   <title>AWS RDS Todo App</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Inter', sans-serif;
-      background: #e0e7ff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'SF Pro Display', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: flex-start;
-      padding-top: 40px;
+      align-items: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -250px;
+      right: -250px;
+      animation: float 20s infinite ease-in-out;
+    }
+
+    body::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -200px;
+      left: -200px;
+      animation: float 15s infinite ease-in-out reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      50% { transform: translate(30px, 30px) rotate(180deg); }
     }
 
     .container {
-      background: #fff;
-      padding: 30px 40px;
-      border-radius: 12px;
-      width: 420px;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(30px) saturate(180%);
+      -webkit-backdrop-filter: blur(30px) saturate(180%);
+      padding: 40px;
+      border-radius: 24px;
+      width: 480px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
+                  0 1px 0 rgba(255, 255, 255, 0.5) inset,
+                  0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      position: relative;
+      z-index: 1;
+      animation: slideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
     }
 
     h2 {
       text-align: center;
-      margin-bottom: 20px;
-      color: #3730a3;
+      margin-bottom: 24px;
+      color: #ffffff;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .health {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .health-item {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .health-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .health-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 500;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-left: auto;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      position: relative;
+    }
+
+    .status-dot::before {
+      content: '';
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes ping {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+      }
+    }
+
+    .status-indicator.healthy .status-dot {
+      background: #34d399;
+      box-shadow: 0 0 12px rgba(52, 211, 153, 0.6);
+    }
+
+    .status-indicator.healthy .status-dot::before {
+      background: #34d399;
+    }
+
+    .status-indicator.healthy .status-text {
+      color: #34d399;
+      text-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+    }
+
+    .status-indicator.unhealthy .status-dot {
+      background: #f87171;
+      box-shadow: 0 0 12px rgba(248, 113, 113, 0.6);
+      animation: pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .status-indicator.unhealthy .status-dot::before {
+      background: #f87171;
+    }
+
+    .status-indicator.unhealthy .status-text {
+      color: #f87171;
+      text-shadow: 0 0 10px rgba(248, 113, 113, 0.3);
+    }
+
+    .status-indicator.loading .status-dot {
+      background: #fbbf24;
+      box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
+      animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    .status-indicator.loading .status-dot::before {
+      background: #fbbf24;
+    }
+
+    .status-indicator.loading .status-text {
+      color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+    }
+
+    .input-container {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
     }
 
     #todoInput {
-      width: calc(100% - 90px);
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #c7d2fe;
+      flex: 1;
+      padding: 14px 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: rgba(255, 255, 255, 0.25);
+      backdrop-filter: blur(10px);
       outline: none;
-      font-size: 16px;
+      font-size: 15px;
+      color: #ffffff;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 500;
+    }
+
+    #todoInput::placeholder {
+      color: rgba(255, 255, 255, 0.6);
     }
 
     #todoInput:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      border-color: rgba(255, 255, 255, 0.6);
+      background: rgba(255, 255, 255, 0.3);
+      box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1),
+                  0 4px 20px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
     }
 
     button {
-      padding: 10px 16px;
-      margin-left: 10px;
+      padding: 14px 24px;
       border: none;
-      border-radius: 8px;
-      background-color: #6366f1;
-      color: #fff;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #667eea;
       font-weight: 600;
+      font-size: 15px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 1);
     }
 
     button:hover {
-      background-color: #4f46e5;
+      background: rgba(255, 255, 255, 1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
     ul {
       list-style: none;
-      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
-      background: #f3f4f6;
-      border-radius: 8px;
-      margin-bottom: 10px;
+      padding: 16px 18px;
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      animation: fadeIn 0.4s ease-out;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    li:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateX(4px);
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    li span {
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      flex: 1;
+      transition: all 0.3s ease;
     }
 
     li span.completed {
       text-decoration: line-through;
-      color: #9ca3af;
+      color: rgba(255, 255, 255, 0.5);
     }
 
     li button {
-      background-color: #fff;
-      color: #6366f1;
-      padding: 6px 10px;
-      font-size: 14px;
+      background: rgba(255, 255, 255, 0.3);
+      color: #ffffff;
+      padding: 8px 12px;
+      font-size: 13px;
       margin-left: 6px;
+      min-width: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
     }
 
     li button:hover {
-      background-color: #6366f1;
-      color: #fff;
+      background: rgba(255, 255, 255, 0.5);
+      color: #ffffff;
     }
 
-    .health {
+    /* Toast notifications */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 1000;
       display: flex;
-      justify-content: space-between;
-      margin-bottom: 20px;
-      padding: 10px 16px;
-      border-radius: 8px;
-      background: #fef3c7;
-      font-weight: 600;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .health span {
-      font-weight: 400;
+    .toast {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      padding: 16px 20px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      min-width: 280px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      transform-origin: top right;
     }
 
-    .healthy {
-      color: green;
+    .toast.hiding {
+      animation: toastOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
     }
 
-    .unhealthy {
-      color: red;
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateX(100%) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes toastOut {
+      to {
+        opacity: 0;
+        transform: translateX(100%) scale(0.8);
+      }
+    }
+
+    .toast-icon {
+      font-size: 20px;
+      min-width: 20px;
+    }
+
+    .toast-message {
+      flex: 1;
+      color: #1f2937;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .toast.success .toast-icon {
+      color: #10b981;
+    }
+
+    .toast.error .toast-icon {
+      color: #ef4444;
+    }
+
+    .toast.info .toast-icon {
+      color: #3b82f6;
     }
   </style>
 </head>
 
 <body>
+  <!-- Toast container -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <div class="container">
     <h2>AWS RDS Todo App</h2>
 
     <!-- Health panel -->
     <div class="health">
-      Server: <span id="serverHealth">Loading...</span>
-      DB: <span id="dbHealth">Loading...</span>
+      <div class="health-item">
+        <span class="health-label">Server</span>
+        <div class="status-indicator loading" id="serverStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Loading</span>
+        </div>
+      </div>
+      <div class="health-item">
+        <span class="health-label">Database</span>
+        <div class="status-indicator loading" id="dbStatus">
+          <span class="status-dot"></span>
+          <span class="status-text">Loading</span>
+        </div>
+      </div>
     </div>
 
     <!-- Todo input -->
-    <div style="display:flex;">
-      <input id="todoInput" placeholder="New todo" />
+    <div class="input-container">
+      <input id="todoInput" placeholder="What needs to be done?" />
       <button onclick="addTodo()">Add</button>
     </div>
 
@@ -141,8 +449,34 @@
     const SERVER_HEALTH = '/health';
     const DB_HEALTH = '/dbactive';
 
+    // Toast notification system
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icons = {
+        success: '✓',
+        error: '✕',
+        info: 'ℹ'
+      };
+      
+      toast.innerHTML = `
+        <span class="toast-icon">${icons[type]}</span>
+        <span class="toast-message">${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
     // Load todos
-    async function loadTodos() {
+    async function loadTodos(showErrorToast = false) {
       try {
         const res = await fetch(API);
         const data = await res.json();
@@ -160,6 +494,9 @@
         });
       } catch (err) {
         console.error('❌ Failed to load todos:', err);
+        if (showErrorToast) {
+          showToast('Failed to load todos', 'error');
+        }
       }
     }
 
@@ -167,7 +504,10 @@
     async function addTodo() {
       const input = document.getElementById('todoInput');
       const title = input.value.trim();
-      if (!title) return;
+      if (!title) {
+        showToast('Please enter a todo', 'info');
+        return;
+      }
       try {
         await fetch(API, {
           method: 'POST',
@@ -176,8 +516,10 @@
         });
         input.value = '';
         loadTodos();
+        showToast('Todo added successfully', 'success');
       } catch (err) {
         console.error('❌ Failed to add todo:', err);
+        showToast('Failed to add todo', 'error');
       }
     }
 
@@ -190,8 +532,10 @@
           body: JSON.stringify({ completed })
         });
         loadTodos();
+        showToast(completed ? 'Todo completed!' : 'Todo uncompleted', 'success');
       } catch (err) {
         console.error('❌ Failed to update todo:', err);
+        showToast('Failed to update todo', 'error');
       }
     }
 
@@ -200,8 +544,10 @@
       try {
         await fetch(`${API}/${id}`, { method: 'DELETE' });
         loadTodos();
+        showToast('Todo deleted', 'success');
       } catch (err) {
         console.error('❌ Failed to delete todo:', err);
+        showToast('Failed to delete todo', 'error');
       }
     }
 
@@ -211,19 +557,38 @@
         const serverRes = await fetch(SERVER_HEALTH);
         const dbRes = await fetch(DB_HEALTH);
 
-        document.getElementById('serverHealth').textContent = serverRes.ok ? 'Healthy' : 'Unhealthy';
-        document.getElementById('serverHealth').className = serverRes.ok ? 'healthy' : 'unhealthy';
+        const serverStatus = document.getElementById('serverStatus');
+        const serverHealthy = serverRes.ok;
+        serverStatus.className = `status-indicator ${serverHealthy ? 'healthy' : 'unhealthy'}`;
+        serverStatus.innerHTML = `
+          <span class="status-dot"></span>
+          <span class="status-text">${serverHealthy ? 'Healthy' : 'Unhealthy'}</span>
+        `;
 
         const dbData = await dbRes.json();
-        const dbStatus = dbData.status === 'healthy' ? 'Healthy' : 'Unhealthy';
-        document.getElementById('dbHealth').textContent = dbStatus;
-        document.getElementById('dbHealth').className = dbData.status === 'healthy' ? 'healthy' : 'unhealthy';
+        const dbStatus = document.getElementById('dbStatus');
+        const dbHealthy = dbData.status === 'healthy';
+        dbStatus.className = `status-indicator ${dbHealthy ? 'healthy' : 'unhealthy'}`;
+        dbStatus.innerHTML = `
+          <span class="status-dot"></span>
+          <span class="status-text">${dbHealthy ? 'Healthy' : 'Unhealthy'}</span>
+        `;
       } catch (err) {
         console.error('❌ Failed to load health:', err);
-        document.getElementById('serverHealth').textContent = 'Unhealthy';
-        document.getElementById('serverHealth').className = 'unhealthy';
-        document.getElementById('dbHealth').textContent = 'Unhealthy';
-        document.getElementById('dbHealth').className = 'unhealthy';
+        
+        const serverStatus = document.getElementById('serverStatus');
+        serverStatus.className = 'status-indicator unhealthy';
+        serverStatus.innerHTML = `
+          <span class="status-dot"></span>
+          <span class="status-text">Unhealthy</span>
+        `;
+        
+        const dbStatus = document.getElementById('dbStatus');
+        dbStatus.className = 'status-indicator unhealthy';
+        dbStatus.innerHTML = `
+          <span class="status-dot"></span>
+          <span class="status-text">Unhealthy</span>
+        `;
       }
     }
 
