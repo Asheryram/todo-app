@@ -84,7 +84,7 @@ async function getMetadata(path) {
 
     return res.data;
   } catch {
-    return 'N/A';
+    return 'Not available';
   }
 }
 

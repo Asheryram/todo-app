@@ -49,8 +49,13 @@
     }
 
     @keyframes float {
-      0%, 100% { transform: translate(0, 0) rotate(0deg); }
-      50% { transform: translate(30px, 30px) rotate(180deg); }
+      0%, 100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+
+      50% {
+        transform: translate(30px, 30px) rotate(180deg);
+      }
     }
 
     .container {
@@ -61,8 +66,8 @@
       border-radius: 24px;
       width: 480px;
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1),
-                  0 1px 0 rgba(255, 255, 255, 0.5) inset,
-                  0 -1px 0 rgba(0, 0, 0, 0.1) inset;
+        0 1px 0 rgba(255, 255, 255, 0.5) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.1) inset;
       border: 1px solid rgba(255, 255, 255, 0.3);
       position: relative;
       z-index: 1;
@@ -74,6 +79,7 @@
         opacity: 0;
         transform: translateY(20px) scale(0.95);
       }
+
       to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -152,6 +158,7 @@
       0%, 100% {
         opacity: 1;
       }
+
       50% {
         opacity: 0.7;
       }
@@ -162,6 +169,7 @@
         transform: scale(1);
         opacity: 1;
       }
+
       75%, 100% {
         transform: scale(2);
         opacity: 0;
@@ -240,7 +248,7 @@
       border-color: rgba(255, 255, 255, 0.6);
       background: rgba(255, 255, 255, 0.3);
       box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1),
-                  0 4px 20px rgba(0, 0, 0, 0.1);
+        0 4px 20px rgba(0, 0, 0, 0.1);
       transform: translateY(-1px);
     }
 
@@ -295,6 +303,7 @@
         opacity: 0;
         transform: translateY(10px);
       }
+
       to {
         opacity: 1;
         transform: translateY(0);
@@ -370,6 +379,7 @@
         opacity: 0;
         transform: translateX(100%) scale(0.8);
       }
+
       to {
         opacity: 1;
         transform: translateX(0) scale(1);
@@ -405,6 +415,29 @@
 
     .toast.info .toast-icon {
       color: #3b82f6;
+    }
+
+    /* Metadata panel */
+    .meta-panel {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      color: white;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 12px;
+      line-height: 1.5;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      z-index: 999;
+      min-width: 180px;
+      pointer-events: none;
+    }
+
+    .meta-panel strong {
+      color: #a5b4fc;
+      font-weight: 600;
     }
   </style>
 </head>
@@ -444,38 +477,37 @@
     <ul id="list"></ul>
   </div>
 
+  <!-- Metadata panel -->
+  <div class="meta-panel" id="metaPanel">
+    <div><strong>IP:</strong> <span id="metaIp">Loading...</span></div>
+    <div><strong>AZ:</strong> <span id="metaAz">Loading...</span></div>
+    <div><strong>Type:</strong> <span id="metaType">Loading...</span></div>
+  </div>
+
   <script>
     const API = '/api/todos';
     const SERVER_HEALTH = '/health';
     const DB_HEALTH = '/dbactive';
+    const METADATA_API = '/api/metadata';
 
-    // Toast notification system
+    /* ========================== Toast system ========================== */
     function showToast(message, type = 'info') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      
-      const icons = {
-        success: '✓',
-        error: '✕',
-        info: 'ℹ'
-      };
-      
-      toast.innerHTML = `
-        <span class="toast-icon">${icons[type]}</span>
-        <span class="toast-message">${message}</span>
-      `;
-      
+
+      const icons = { success: '✓', error: '✕', info: 'ℹ' };
+      toast.innerHTML = `<span class="toast-icon">${icons[type]}</span>
+                         <span class="toast-message">${message}</span>`;
       container.appendChild(toast);
-      
-      // Auto remove after 3 seconds
+
       setTimeout(() => {
         toast.classList.add('hiding');
         setTimeout(() => toast.remove(), 300);
       }, 3000);
     }
 
-    // Load todos
+    /* ========================== Todos ========================== */
     async function loadTodos(showErrorToast = false) {
       try {
         const res = await fetch(API);
@@ -485,29 +517,24 @@
         data.forEach(t => {
           const li = document.createElement('li');
           li.innerHTML = `
-        <span class="${t.completed ? 'completed' : ''}">${t.title}</span>
-        <div>
-          <button onclick="toggle(${t.id}, ${!t.completed})">✓</button>
-          <button onclick="del(${t.id})">X</button>
-        </div>`;
+          <span class="${t.completed ? 'completed' : ''}">${t.title}</span>
+          <div>
+            <button onclick="toggle(${t.id}, ${!t.completed})">✓</button>
+            <button onclick="del(${t.id})">X</button>
+          </div>`;
           list.appendChild(li);
         });
       } catch (err) {
         console.error('❌ Failed to load todos:', err);
-        if (showErrorToast) {
-          showToast('Failed to load todos', 'error');
-        }
+        if (showErrorToast) showToast('Failed to load todos', 'error');
       }
     }
 
-    // Add todo
     async function addTodo() {
       const input = document.getElementById('todoInput');
       const title = input.value.trim();
-      if (!title) {
-        showToast('Please enter a todo', 'info');
-        return;
-      }
+      if (!title) return showToast('Please enter a todo', 'info');
+
       try {
         await fetch(API, {
           method: 'POST',
@@ -523,7 +550,6 @@
       }
     }
 
-    // Toggle completed
     async function toggle(id, completed) {
       try {
         await fetch(`${API}/${id}`, {
@@ -539,7 +565,6 @@
       }
     }
 
-    // Delete todo
     async function del(id) {
       try {
         await fetch(`${API}/${id}`, { method: 'DELETE' });
@@ -551,7 +576,7 @@
       }
     }
 
-    // Load server & DB health
+    /* ========================== Health ========================== */
     async function loadHealth() {
       try {
         const serverRes = await fetch(SERVER_HEALTH);
@@ -560,45 +585,49 @@
         const serverStatus = document.getElementById('serverStatus');
         const serverHealthy = serverRes.ok;
         serverStatus.className = `status-indicator ${serverHealthy ? 'healthy' : 'unhealthy'}`;
-        serverStatus.innerHTML = `
-          <span class="status-dot"></span>
-          <span class="status-text">${serverHealthy ? 'Healthy' : 'Unhealthy'}</span>
-        `;
+        serverStatus.innerHTML = `<span class="status-dot"></span>
+                                  <span class="status-text">${serverHealthy ? 'Healthy' : 'Unhealthy'}</span>`;
 
         const dbData = await dbRes.json();
         const dbStatus = document.getElementById('dbStatus');
         const dbHealthy = dbData.status === 'healthy';
         dbStatus.className = `status-indicator ${dbHealthy ? 'healthy' : 'unhealthy'}`;
-        dbStatus.innerHTML = `
-          <span class="status-dot"></span>
-          <span class="status-text">${dbHealthy ? 'Healthy' : 'Unhealthy'}</span>
-        `;
+        dbStatus.innerHTML = `<span class="status-dot"></span>
+                              <span class="status-text">${dbHealthy ? 'Healthy' : 'Unhealthy'}</span>`;
       } catch (err) {
         console.error('❌ Failed to load health:', err);
-        
         const serverStatus = document.getElementById('serverStatus');
         serverStatus.className = 'status-indicator unhealthy';
-        serverStatus.innerHTML = `
-          <span class="status-dot"></span>
-          <span class="status-text">Unhealthy</span>
-        `;
-        
+        serverStatus.innerHTML = `<span class="status-dot"></span>
+                                  <span class="status-text">Unhealthy</span>`;
+
         const dbStatus = document.getElementById('dbStatus');
         dbStatus.className = 'status-indicator unhealthy';
-        dbStatus.innerHTML = `
-          <span class="status-dot"></span>
-          <span class="status-text">Unhealthy</span>
-        `;
+        dbStatus.innerHTML = `<span class="status-dot"></span>
+                              <span class="status-text">Unhealthy</span>`;
       }
     }
 
-    // Initial load
+    /* ========================== Metadata ========================== */
+    async function loadMetadata() {
+      try {
+        const res = await fetch(METADATA_API);
+        const data = await res.json();
+        document.getElementById('metaIp').textContent = data.publicIp || data.privateIp || 'N/A';
+        document.getElementById('metaAz').textContent = data.availabilityZone || 'N/A';
+        document.getElementById('metaType').textContent = data.instanceType || 'N/A';
+      } catch (err) {
+        console.error('❌ Failed to load metadata:', err);
+      }
+    }
+
+    /* ========================== Initial load & intervals ========================== */
     loadTodos();
     loadHealth();
-
-    // Refresh health every 10 seconds
-    setInterval(loadHealth, 10000);
+    loadMetadata();
     setInterval(loadTodos, 10000);
+    setInterval(loadHealth, 10000);
+    setInterval(loadMetadata, 60000);
   </script>
 </body>
 
