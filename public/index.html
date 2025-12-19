@@ -479,9 +479,11 @@
 
   <!-- Metadata panel -->
   <div class="meta-panel" id="metaPanel">
-    <div><strong>IP:</strong> <span id="metaIp">Loading...</span></div>
+    <div><strong>Public IP:</strong> <span id="metaPublicIp">Loading...</span></div>
+    <div><strong>Private IP:</strong> <span id="metaPrivateIp">Loading...</span></div>
     <div><strong>AZ:</strong> <span id="metaAz">Loading...</span></div>
     <div><strong>Type:</strong> <span id="metaType">Loading...</span></div>
+    <div><strong>Instance Id:</strong> <span id="metaInstanceId">Loading...</span></div>
   </div>
 
   <script>
@@ -613,9 +615,11 @@
       try {
         const res = await fetch(METADATA_API);
         const data = await res.json();
-        document.getElementById('metaIp').textContent = data.publicIp || data.privateIp || 'N/A';
+        document.getElementById('metaPublicIp').textContent = data.publicIp || 'N/A';
+        document.getElementById('metaPrivateIp').textContent =  data.privateIp || 'N/A';
         document.getElementById('metaAz').textContent = data.availabilityZone || 'N/A';
         document.getElementById('metaType').textContent = data.instanceType || 'N/A';
+        document.getElementById('metaInstanceId').textContent = data.instanceId || 'N/A';
       } catch (err) {
         console.error('❌ Failed to load metadata:', err);
       }
